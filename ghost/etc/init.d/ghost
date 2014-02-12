@@ -5,28 +5,80 @@
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start/Stop/Restart/Reload local Ghost blog instance(s)
+# Short-Description: Start/Stop/Restart/Status local Ghost blog instance(s)
 # Description:       Enable service provided by daemon.
 ### END INIT INFO
 
+RUNAS=ghost
+SERVICE=ghost
+GHOST_HOME=/var/www/ghost
+START_COMMAND="forever start index.js"
+STOP_COMMAND="forever stop index.js"
+
+CURDIR=$(pwd)
+
 start(){
-  
+  echo "Starting ghost blogs…"
+  NODE_ENV=production
+  for dir in $GHOST_HOME/*/
+  do
+    dir=${dir%*/}
+    blog=${dir##*/}
+    index=$dir/index.js
+    if [ -f $index ]; then
+      pid=$(ps -ef | grep $blog | grep -v grep)
+      if [ "$pid" = "" ]; then
+        echo "Starting $dir"
+        cd $dir
+        $START_COMMAND
+        cd $CURDIR
+        echo "Started $dir"
+      else
+        echo "$dir is already running."
+      fi
+    else
+      echo "$blog is not a ghost blog so skipping"
+    fi
+  done
 }
 
 stop(){
-  
+  echo "Stopping ghost blogs…"
+  NODE_ENV=production
+  for dir in $GHOST_HOME/*/
+  do
+    dir=${dir%*/}
+    blog=${dir##*/}
+    pid=$(ps -ef | grep $blog | grep -v grep)
+    if [ "$pid" = "" ]; then
+      echo "$dir not running, so ignoring."
+    else
+      echo "Stopping $dir"
+      cd $dir
+      $STOP_COMMAND
+      cd $CURDIR
+      echo "Stopped $dir"       
+    fi
+  done
 }
 
 restart(){
-  
-}
-
-reload(){
-  
+  stop
+  start
 }
 
 status(){
-  
+  for dir in $GHOST_HOME/*/
+  do
+    dir=${dir%*/}
+    blog=${dir##*/}
+    pid=$(ps -ef | grep $blog | grep -v grep)
+    if [ "$pid" = "" ]; then
+      echo "$dir is not running."
+    else
+      echo "$dir is running."       
+    fi
+  done
 }
 
 case "$1" in
@@ -38,9 +90,6 @@ case "$1" in
     ;;
   restart)
     restart
-    ;;
-  reload)
-    reload
     ;;
   status)
     status
