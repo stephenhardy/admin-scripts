@@ -12,8 +12,8 @@
 RUNAS=ghost
 SERVICE=ghost
 GHOST_HOME=/var/www/ghost
-START_COMMAND="forever start index.js"
-STOP_COMMAND="forever stop index.js"
+START_COMMAND="su -c forever start index.js $RUNAS"
+STOP_COMMAND="su -c forever stop index.js $RUNAS"
 
 CURDIR=$(pwd)
 
@@ -24,12 +24,12 @@ start(){
   do
     dir=${dir%*/}
     blog=${dir##*/}
-    index=$dir/index.js
+    index=$dir/htdocs/index.js
     if [ -f $index ]; then
       pid=$(ps -ef | grep $blog | grep -v grep)
       if [ "$pid" = "" ]; then
         echo "Starting $dir"
-        cd $dir
+        cd $dir/htdocs
         $START_COMMAND
         cd $CURDIR
         echo "Started $dir"
@@ -54,7 +54,7 @@ stop(){
       echo "$dir not running, so ignoring."
     else
       echo "Stopping $dir"
-      cd $dir
+      cd $dir/htdocs
       $STOP_COMMAND
       cd $CURDIR
       echo "Stopped $dir"       
